@@ -24,6 +24,7 @@ export interface VariableMeta {
     name: string;           // Clean name, e.g. "framework"
     defaultValue: string;   // Default value
     choices?: string[];     // Options list if any
+    type: 'text' | 'choice' | 'boolean'; // Type discriminator
 }
 
 // Presets Dictionaries
@@ -82,22 +83,41 @@ export const DETAIL_GUIDELINES = [
 
 /**
  * Parses a raw prompt string and extracts all variables matching the {{name}} syntax,
- * including defaults ({{name=val}}) and options enums ({{name:opt1|opt2|opt3}}).
+ * including defaults ({{name=val}}), options enums ({{name:opt1|opt2|opt3}}), and
+ * conditional blocks ({% if name %}).
  */
 export function parsePromptVariables(rawPrompt: string): VariableMeta[] {
-    const regex = /\{\{([^}]+)\}\}/g;
     const variables: VariableMeta[] = [];
     const seenNames = new Set<string>();
-    let match;
+    
+    // 1. Parse conditional blocks: {% if name %}
+    const condRegex = /{%\s*if\s+([a-zA-Z0-9_-]+)\s*%}/g;
+    let condMatch;
+    while ((condMatch = condRegex.exec(rawPrompt)) !== null) {
+        const name = condMatch[1].trim();
+        if (!seenNames.has(name)) {
+            seenNames.add(name);
+            variables.push({
+                key: condMatch[0],
+                name,
+                defaultValue: 'false',
+                type: 'boolean'
+            });
+        }
+    }
 
-    while ((match = regex.exec(rawPrompt)) !== null) {
-        const fullContent = match[1].trim();
+    // 2. Parse standard variables: {{name}}
+    const varRegex = /\{\{([^}]+)\}\}/g;
+    let varMatch;
+    while ((varMatch = varRegex.exec(rawPrompt)) !== null) {
+        const fullContent = varMatch[1].trim();
         
         let name: string;
         let defaultValue = '';
         let choices: string[] | undefined = undefined;
+        let type: 'text' | 'choice' = 'text';
 
-        // 1. Check for default values (e.g., {{language=python}})
+        // 2a. Check for default values (e.g., {{language=python}})
         const eqIndex = fullContent.indexOf('=');
         let configPart = fullContent;
         if (eqIndex !== -1) {
@@ -105,12 +125,13 @@ export function parsePromptVariables(rawPrompt: string): VariableMeta[] {
             configPart = fullContent.substring(0, eqIndex).trim();
         }
 
-        // 2. Check for option enums (e.g., {{framework:react|vue|svelte}})
+        // 2b. Check for option enums (e.g., {{framework:react|vue|svelte}})
         const colonIndex = configPart.indexOf(':');
         if (colonIndex !== -1) {
             name = configPart.substring(0, colonIndex).trim();
             const choicesStr = configPart.substring(colonIndex + 1).trim();
             choices = choicesStr.split('|').map(c => c.trim()).filter(Boolean);
+            type = 'choice';
             
             // Default to first choice if no default is explicitly configured
             if (!defaultValue && choices.length > 0) {
@@ -123,10 +144,11 @@ export function parsePromptVariables(rawPrompt: string): VariableMeta[] {
         if (!seenNames.has(name)) {
             seenNames.add(name);
             variables.push({
-                key: match[1],
+                key: varMatch[1],
                 name,
                 defaultValue,
-                choices
+                choices,
+                type
             });
         }
     }
@@ -139,16 +161,26 @@ export function parsePromptVariables(rawPrompt: string): VariableMeta[] {
  */
 export function processRawPrompt(rawPrompt: string, variables: Record<string, string>): string {
     let text = rawPrompt;
-    const metas = parsePromptVariables(rawPrompt);
+    
+    // 1. Process conditional blocks first: {% if key %} ... {% endif %}
+    const condBlockRegex = /{%\s*if\s+([a-zA-Z0-9_-]+)\s*%}([\s\S]*?){%\s*endif\s*%}/g;
+    text = text.replace(condBlockRegex, (_, name, innerContent) => {
+        const isTrue = variables[name] === 'true';
+        return isTrue ? innerContent : '';
+    });
+    
+    // 2. Process standard variables by matching all variations of their clean name
+    const metas = parsePromptVariables(rawPrompt).filter(m => m.type !== 'boolean');
     
     metas.forEach(meta => {
         const value = variables[meta.name]?.trim() !== undefined && variables[meta.name]?.trim() !== ''
             ? variables[meta.name].trim()
             : (meta.defaultValue || `[${meta.name}]`);
         
-        // Escape bracket contents for RegExp safety
-        const escapedKey = meta.key.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
-        text = text.replace(new RegExp(`\\{\\{${escapedKey}\\}\\}`, 'g'), value);
+        // Escape name and target raw, default, or enum occurrences
+        const escapedName = meta.name.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+        const pattern = new RegExp(`\\{\\{\\s*${escapedName}\\s*(?:=[^}]+|:[^}]+)?\\}\\}`, 'g');
+        text = text.replace(pattern, value);
     });
     
     return text;

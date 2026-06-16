@@ -1,6 +1,6 @@
-/* PromptCraft Pro - Modern Glassmorphic CSS System */
+/* PromptCraft Pro - Premium Styling System */
 
-/* Theme Configuration variables */
+/* CSS Variables for Dark Theme */
 :root {
     --bg-main: #06070b;
     --bg-glow-1: rgba(99, 102, 241, 0.15); /* Neon indigo */
@@ -31,7 +31,7 @@
     --transition-smooth: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Reset and Global Styles */
+/* Reset and Core Rules */
 * {
     margin: 0;
     padding: 0;
@@ -47,7 +47,7 @@ body {
     line-height: 1.5;
 }
 
-/* Blurred Glow Background Elements */
+/* Background Glow Effects */
 .glow-bg {
     position: absolute;
     width: 600px;
@@ -93,7 +93,7 @@ body {
     background: rgba(255, 255, 255, 0.2);
 }
 
-/* Base Layout Container */
+/* Layout Container */
 .app-container {
     max-width: 1440px;
     margin: 0 auto;
@@ -205,7 +205,7 @@ body {
     flex: 1;
 }
 
-/* Form Groups & Input Controls */
+/* Form Groups & Inputs */
 .form-group {
     display: flex;
     flex-direction: column;
@@ -263,15 +263,23 @@ select {
     color: var(--text-primary);
     font-family: inherit;
     font-size: 0.9rem;
-    padding: 0.65rem 0.85rem;
+    padding: 0.65rem 2.25rem 0.65rem 0.85rem;
     outline: none;
     cursor: pointer;
     transition: var(--transition-fast);
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1rem;
 }
 
 select:focus {
     border-color: var(--border-focus);
     box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.2);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23a855f7' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
 }
 
 /* Custom Buttons System */
@@ -382,7 +390,7 @@ select:focus {
     text-decoration: underline;
 }
 
-/* Card Structures */
+/* Card layout components */
 .card {
     background: var(--card-bg);
     border: 1px solid var(--border-light);
@@ -400,7 +408,7 @@ select:focus {
     padding-left: 0.5rem;
 }
 
-/* Settings Tuning Grid */
+/* Tuning grid parameters */
 .settings-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -408,7 +416,7 @@ select:focus {
     margin-bottom: 1.25rem;
 }
 
-/* Range Sliders styling */
+/* Range Sliders */
 .slider-group {
     margin-bottom: 1rem;
 }
@@ -459,7 +467,7 @@ select:focus {
     padding: 0.25rem 0.15rem;
 }
 
-/* Custom Checkbox Toggle list */
+/* Checkbox Toggle checklist */
 .toggles-list {
     display: flex;
     flex-direction: column;
@@ -531,7 +539,7 @@ select:focus {
     transform: rotate(45deg);
 }
 
-/* Compile Footer Toggles */
+/* Action Toggles Area */
 .actions-footer {
     display: flex;
     justify-content: space-between;
@@ -663,7 +671,7 @@ select:focus {
     border-color: var(--accent-indigo);
 }
 
-/* Outputs Cards styling */
+/* Outputs Card */
 .output-panel-body {
     gap: 1rem;
 }
@@ -742,6 +750,7 @@ select:focus {
 
 .output-wrapper textarea {
     height: 100%;
+    min-height: 250px;
     font-family: monospace;
     font-size: 0.9rem;
     line-height: 1.6;
@@ -749,6 +758,12 @@ select:focus {
     resize: none;
     background: transparent;
     cursor: text;
+}
+
+.compare-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
 }
 
 /* Prompt Version History & Diffing Styles */
@@ -866,69 +881,7 @@ select:focus {
     font-family: 'Outfit', sans-serif;
 }
 
-/* Sandbox card preview */
-.simulator-card {
-    background: rgba(0, 0, 0, 0.4);
-    border: 1px solid var(--border-light);
-    border-radius: 10px;
-    overflow: hidden;
-}
-
-.simulator-header {
-    background: rgba(255, 255, 255, 0.03);
-    border-bottom: 1px solid var(--border-light);
-    display: flex;
-    align-items: center;
-    padding: 0.5rem 1rem;
-    gap: 0.75rem;
-}
-
-.sim-dots {
-    display: flex;
-    gap: 0.35rem;
-}
-
-.sim-dots span {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background-color: var(--text-dark);
-}
-
-.sim-dots span:nth-child(1) { background-color: var(--accent-rose); }
-.sim-dots span:nth-child(2) { background-color: #f59e0b; }
-.sim-dots span:nth-child(3) { background-color: var(--accent-emerald); }
-
-.sim-title {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    font-family: monospace;
-}
-
-.simulator-body {
-    padding: 1.25rem;
-    min-height: 80px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-}
-
-.sim-placeholder {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-    color: var(--text-dark);
-    font-size: 0.8rem;
-    max-width: 80%;
-}
-
-.sim-placeholder svg {
-    color: var(--text-dark);
-}
-
-/* Modals System Overlays & Box */
+/* Modals Overlay & Alignment bug fixes */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -939,11 +892,11 @@ select:focus {
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     display: flex;
-    align-items: center;
-    justify-content: center;
+    align-items: center;      /* Centers modal vertically */
+    justify-content: center;  /* Centers modal horizontally */
     z-index: 1000;
-    opacity: 1;
-    transition: opacity 0.25s ease;
+    padding: 1.5rem;
+    overflow-y: auto;
 }
 
 .modal {
@@ -951,14 +904,16 @@ select:focus {
     border: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 40px rgba(99, 102, 241, 0.1);
     border-radius: 16px;
-    width: 90%;
+    width: 100%;
     max-width: 500px;
     overflow: hidden;
     animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    margin: auto;
 }
 
 .modal-lg {
     max-width: 800px;
+    max-height: calc(100vh - 3rem);
     height: 80vh;
     display: flex;
     flex-direction: column;
@@ -1059,7 +1014,7 @@ select:focus {
     text-decoration: underline;
 }
 
-/* API status visual feedback box */
+/* API status box details */
 .api-status-box {
     display: flex;
     align-items: center;
@@ -1126,7 +1081,7 @@ select:focus {
     align-items: center;
 }
 
-/* Presets Templates Library Panel */
+/* Presets templates library modal grid options */
 .templates-modal-body {
     display: grid;
     grid-template-columns: 200px 1fr;
@@ -1234,7 +1189,7 @@ select:focus {
     -webkit-box-orient: vertical;
 }
 
-/* Toast System containers */
+/* Toast System styling details */
 .toast-container {
     position: fixed;
     bottom: 2rem;
@@ -1275,7 +1230,69 @@ select:focus {
     border-left: 3px solid var(--accent-indigo);
 }
 
-/* Responsive Grid Adapters */
+/* Simulator sandbox styling details */
+.simulator-card {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.simulator-header {
+    background: rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid var(--border-light);
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    gap: 0.75rem;
+}
+
+.sim-dots {
+    display: flex;
+    gap: 0.35rem;
+}
+
+.sim-dots span {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--text-dark);
+}
+
+.sim-dots span:nth-child(1) { background-color: var(--accent-rose); }
+.sim-dots span:nth-child(2) { background-color: #f59e0b; }
+.sim-dots span:nth-child(3) { background-color: var(--accent-emerald); }
+
+.sim-title {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-family: monospace;
+}
+
+.simulator-body {
+    padding: 1.25rem;
+    min-height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.sim-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-dark);
+    font-size: 0.8rem;
+    max-width: 80%;
+}
+
+.sim-placeholder svg {
+    color: var(--text-dark);
+}
+
+/* Responsive Grid Adapters & Collapsible Compare layouts */
 @media (max-width: 1024px) {
     .dashboard-grid {
         grid-template-columns: 1fr;
@@ -1316,5 +1333,9 @@ select:focus {
         border-right: none;
         border-bottom: 1px solid var(--border-light);
         padding: 0.75rem;
+    }
+    .compare-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
     }
 }

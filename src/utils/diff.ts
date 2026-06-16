@@ -10,7 +10,6 @@ export interface DiffPart {
  * @returns Array of DiffPart structures denoting unchanged, added, or removed lines
  */
 export function computeLineDiff(oldText: string, newText: string): DiffPart[] {
-    // Return early if either text is empty
     if (!oldText) {
         return newText.split('\n').map(line => ({ type: 'added', value: line }));
     }
@@ -24,7 +23,6 @@ export function computeLineDiff(oldText: string, newText: string): DiffPart[] {
     const m = oldLines.length;
     const n = newLines.length;
     
-    // Initialize LCS matrix
     const dp: number[][] = Array(m + 1).fill(null).map(() => Array(n + 1).fill(0));
     
     for (let i = 1; i <= m; i++) {
@@ -37,7 +35,6 @@ export function computeLineDiff(oldText: string, newText: string): DiffPart[] {
         }
     }
     
-    // Backtrack from bottom-right of matrix to build the diff array
     const diff: DiffPart[] = [];
     let i = m;
     let j = n;
