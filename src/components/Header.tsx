@@ -26,7 +26,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenTemplates, onOpenSettings 
                     </svg>
                 </div>
                 <h1>PromptCraft <span className="gradient-text">Pro</span></h1>
-                <span className="badge">v2.0.0-react</span>
+                <span className="badge">v3.0.0-react</span>
             </div>
 
             <div className="header-actions">

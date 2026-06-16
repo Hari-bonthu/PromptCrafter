@@ -6,6 +6,9 @@ import { ConfigPanel } from './components/ConfigPanel';
 import { PromptOutput } from './components/PromptOutput';
 import { SettingsModal } from './components/SettingsModal';
 import { TemplatesModal } from './components/TemplatesModal';
+import { SandboxCompare } from './components/SandboxCompare';
+import { CatalogPanel, type SavedTemplate } from './components/CatalogPanel';
+import { PromptEvals } from './components/PromptEvals';
 import type { PromptVersion } from './components/HistoryPanel';
 import { 
     type PromptConfig, 
@@ -68,26 +71,34 @@ export const App: React.FC = () => {
         return [];
     });
 
-    // Sidebar & Navigation states
+    const [savedTemplates, setSavedTemplates] = useState<SavedTemplate[]>(() => {
+        const saved = localStorage.getItem('promptcraft_saved_templates');
+        if (saved) {
+            try {
+                return JSON.parse(saved);
+            } catch {
+                /* ignore parsing errors, fallback to default */
+            }
+        }
+        return [];
+    });
+
+    // Panel tabs, modes, and loading triggers
     const [activeTab, setActiveTab] = useState<'preview' | 'meta' | 'history'>('preview');
     const [mode, setMode] = useState<'local' | 'ai'>('local');
     const [isLoading, setIsLoading] = useState<boolean>(false);
-    
-    // Sandbox states
-    const [sandboxResponse, setSandboxResponse] = useState<string>('');
-    const [isSandboxLoading, setIsSandboxLoading] = useState<boolean>(false);
 
-    // API credentials
+    // API Configurations
     const [apiKey, setApiKey] = useState<string>(localStorage.getItem('promptcraft_gemini_api_key') || '');
     const [selectedModel, setSelectedModel] = useState<string>(localStorage.getItem('promptcraft_gemini_model') || 'gemini-2.5-flash');
 
-    // Modals
+    // Modals overlays
     const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
     const [isTemplatesOpen, setIsTemplatesOpen] = useState<boolean>(false);
 
-    // Toasts queues
+    // Toasts notifier state
     const [toasts, setToasts] = useState<Array<{ id: string; msg: string; type: 'success' | 'error' | 'info' }>>([]);
-    
+
     // Compute variable metadata dynamically on render
     const parsedMetas = parsePromptVariables(rawPrompt);
 
@@ -107,6 +118,19 @@ export const App: React.FC = () => {
     useEffect(() => {
         localStorage.setItem('promptcraft_history', JSON.stringify(history));
     }, [history]);
+
+    useEffect(() => {
+        localStorage.setItem('promptcraft_saved_templates', JSON.stringify(savedTemplates));
+    }, [savedTemplates]);
+
+    // Toast triggers helper
+    const showToast = (msg: string, type: 'success' | 'error' | 'info' = 'info') => {
+        const id = Math.random().toString(36).substring(2, 9);
+        setToasts(prev => [...prev, { id, msg, type }]);
+        setTimeout(() => {
+            setToasts(prev => prev.filter(t => t.id !== id));
+        }, 3000);
+    };
 
     // Handlers
     const handleRawPromptChange = (val: string) => {
@@ -139,21 +163,10 @@ export const App: React.FC = () => {
         }
     };
 
-    // Toast triggers helper
-    const showToast = (msg: string, type: 'success' | 'error' | 'info' = 'info') => {
-        const id = Math.random().toString(36).substring(2, 9);
-        setToasts(prev => [...prev, { id, msg, type }]);
-        setTimeout(() => {
-            setToasts(prev => prev.filter(t => t.id !== id));
-        }, 3000);
-    };
-
-    // Config updating helper
     const handleConfigChange = (updates: Partial<PromptConfig>) => {
         setConfig(prev => ({ ...prev, ...updates }));
     };
 
-    // Update specific variables values
     const handleVariableChange = (name: string, value: string) => {
         setConfig(prev => ({
             ...prev,
@@ -164,12 +177,9 @@ export const App: React.FC = () => {
         }));
     };
 
-    // Clear editing panel
     const handleClearPrompt = () => {
         setRawPrompt('');
-        setSandboxResponse('');
         setOutputText('');
-        
         setConfig(prev => ({
             ...prev,
             rawPrompt: '',
@@ -178,7 +188,6 @@ export const App: React.FC = () => {
         showToast('Input cleared', 'info');
     };
 
-    // Load templates preset
     const handleSelectTemplate = (templatePrompt: string, role: string, tone: string, format: string, title: string) => {
         setRawPrompt(templatePrompt);
 
@@ -199,13 +208,39 @@ export const App: React.FC = () => {
         showToast(`Loaded Template: ${title}`, 'info');
     };
 
-    // API credentials save callback
     const handleSaveSettings = (key: string, model: string) => {
         setApiKey(key);
         setSelectedModel(model);
         localStorage.setItem('promptcraft_gemini_api_key', key);
         localStorage.setItem('promptcraft_gemini_model', model);
         showToast('Gemini API configuration saved!', 'success');
+    };
+
+    // Save current active config to saved templates catalog
+    const handleSaveTemplate = (title: string, description: string) => {
+        const newTemplate: SavedTemplate = {
+            id: Math.random().toString(36).substring(2, 9),
+            title,
+            description,
+            prompt: rawPrompt,
+            role: config.role,
+            tone: config.tone,
+            format: config.format
+        };
+        setSavedTemplates(prev => [...prev, newTemplate]);
+    };
+
+    const handleDeleteTemplate = (id: string) => {
+        setSavedTemplates(prev => prev.filter(t => t.id !== id));
+        showToast('Template deleted', 'info');
+    };
+
+    const handleImportTemplates = (imported: SavedTemplate[]) => {
+        setSavedTemplates(prev => {
+            const existingIds = new Set(prev.map(t => t.id));
+            const uniqueImported = imported.filter(t => !existingIds.has(t.id));
+            return [...prev, ...uniqueImported];
+        });
     };
 
     // Run compile / rewrite prompt logic
@@ -222,11 +257,9 @@ export const App: React.FC = () => {
             let finalOutput = '';
 
             if (mode === 'local') {
-                // Instant Local Compile
                 finalOutput = compileLocalPrompt(config);
                 showToast('Prompt compiled locally!', 'success');
             } else {
-                // Gemini API Call
                 if (!apiKey) {
                     setIsSettingsOpen(true);
                     showToast('Please save a valid Gemini API Key first.', 'error');
@@ -240,7 +273,6 @@ export const App: React.FC = () => {
             setOutputText(finalOutput);
             setActiveTab('preview');
 
-            // Save revision to history log
             const newVersion: PromptVersion = {
                 id: generateVersionId(),
                 timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
@@ -259,52 +291,6 @@ export const App: React.FC = () => {
         }
     };
 
-    // Sandbox execution simulation run
-    const handleRunSandbox = async () => {
-        if (!outputText) {
-            showToast('Please compile a prompt first!', 'error');
-            return;
-        }
-        if (!apiKey) {
-            setIsSettingsOpen(true);
-            showToast('API key is required to run simulation.', 'error');
-            return;
-        }
-
-        setIsSandboxLoading(true);
-        setSandboxResponse('');
-
-        try {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`;
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: outputText }] }],
-                    generationConfig: { maxOutputTokens: 1024 }
-                })
-            });
-
-            if (!response.ok) {
-                const errJson = await response.json().catch(() => ({}));
-                throw new Error(errJson.error?.message || `HTTP ${response.status}`);
-            }
-
-            const data = await response.json();
-            const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (!text) throw new Error('API returned empty response');
-
-            setSandboxResponse(text.trim());
-            showToast('Sandbox simulation run successful!', 'success');
-        } catch (err: unknown) {
-            const error = err as Error;
-            showToast(`Sandbox run failed: ${error.message}`, 'error');
-        } finally {
-            setIsSandboxLoading(false);
-        }
-    };
-
-    // Gemini API Call
     const generateWithGeminiAPI = async (): Promise<string> => {
         const processedPrompt = processRawPrompt(rawPrompt, config.variables);
         const constraintsText = [];
@@ -363,7 +349,6 @@ export const App: React.FC = () => {
 
     return (
         <>
-            {/* Glowing Accent Orbs */}
             <div className="glow-bg glow-1"></div>
             <div className="glow-bg glow-2"></div>
 
@@ -398,6 +383,15 @@ export const App: React.FC = () => {
                                 onChange={handleConfigChange}
                             />
 
+                            <CatalogPanel
+                                savedTemplates={savedTemplates}
+                                onLoadTemplate={handleSelectTemplate}
+                                onSaveTemplate={handleSaveTemplate}
+                                onDeleteTemplate={handleDeleteTemplate}
+                                onImportTemplates={handleImportTemplates}
+                                onToast={showToast}
+                            />
+
                             <div className="actions-footer">
                                 <div className="mode-selector">
                                     <button
@@ -418,7 +412,7 @@ export const App: React.FC = () => {
                                 <button
                                     onClick={handleGenerate}
                                     disabled={isLoading}
-                                    className={`btn btn-primary btn-lg ${mode === 'ai' ? 'ai-btn-style' : ''}`}
+                                    className="btn btn-primary btn-lg"
                                     style={
                                         mode === 'ai'
                                             ? { background: 'linear-gradient(135deg, var(--accent-violet) 0%, #ec4899 100%)' }
@@ -444,7 +438,7 @@ export const App: React.FC = () => {
                             <h2>Enhanced Prompt</h2>
                             <p className="panel-subtitle">Review, test, and copy the refined instructions</p>
                         </div>
-                        <div className="panel-body output-panel-body">
+                        <div className="panel-body output-panel-body" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                             <PromptOutput
                                 outputText={outputText}
                                 config={config}
@@ -455,62 +449,22 @@ export const App: React.FC = () => {
                                 onToast={showToast}
                             />
 
-                            {/* Direct Sandbox Simulator & Runner */}
-                            <div className="simulator-card">
-                                <div className="simulator-header">
-                                    <div className="sim-dots">
-                                        <span></span><span></span><span></span>
-                                    </div>
-                                    <div className="sim-title">Prompt Engine Sandbox</div>
-                                    {outputText && (
-                                        <button
-                                            onClick={handleRunSandbox}
-                                            disabled={isSandboxLoading}
-                                            className="btn btn-secondary btn-sm"
-                                            style={{ marginLeft: 'auto', padding: '0.2rem 0.5rem', fontSize: '0.75rem' }}
-                                        >
-                                            {isSandboxLoading ? 'Running...' : 'Run Simulation'}
-                                        </button>
-                                    )}
-                                </div>
-                                <div className="simulator-body" style={{ minHeight: '120px', justifyContent: 'flex-start', textAlign: 'left', display: 'flex', flexDirection: 'column', width: '100%' }}>
-                                    {isSandboxLoading ? (
-                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', margin: 'auto', gap: '0.5rem' }}>
-                                            <svg className="loading-spinner" width="24" height="24" viewBox="0 0 50 50">
-                                                <circle className="path" cx="25" cy="25" r="20" fill="none" strokeWidth="5" stroke="var(--accent-indigo)"></circle>
-                                            </svg>
-                                            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Executing prompt against model...</span>
-                                        </div>
-                                    ) : sandboxResponse ? (
-                                        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '0.25rem' }}>
-                                                <span style={{ fontSize: '0.75rem', color: 'var(--accent-emerald)', fontWeight: 600 }}>Response:</span>
-                                                <button
-                                                    onClick={() => setSandboxResponse('')}
-                                                    className="btn-text-link"
-                                                    style={{ fontSize: '0.7rem' }}
-                                                >
-                                                    Clear
-                                                </button>
-                                            </div>
-                                            <textarea
-                                                style={{ width: '100%', height: '150px', background: 'transparent', border: 'none', color: 'var(--text-primary)', fontStyle: 'normal', fontFamily: 'monospace', fontSize: '0.85rem', resize: 'vertical', padding: 0 }}
-                                                value={sandboxResponse}
-                                                readOnly
-                                            />
-                                        </div>
-                                    ) : (
-                                        <div className="sim-placeholder" style={{ margin: 'auto' }}>
-                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                <circle cx="12" cy="12" r="10"></circle>
-                                                <line x1="12" y1="16" x2="12" y2="12"></line>
-                                                <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                                            </svg>
-                                            <p>Click "Run Simulation" above to execute this prompt directly against Gemini and preview the output.</p>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
+                            {/* Dual Model Playground comparison */}
+                            <SandboxCompare
+                                outputText={outputText}
+                                apiKey={apiKey}
+                                onToast={showToast}
+                            />
+
+                            {/* Interactive Test Suite Evals */}
+                            <PromptEvals
+                                rawPrompt={rawPrompt}
+                                config={config}
+                                parsedMetas={parsedMetas}
+                                apiKey={apiKey}
+                                selectedModel={selectedModel}
+                                onToast={showToast}
+                            />
                         </div>
                     </section>
                 </main>
@@ -540,19 +494,19 @@ export const App: React.FC = () => {
                 {toasts.map(t => (
                     <div key={t.id} className={`toast ${t.type}`}>
                         {t.type === 'success' && (
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                 <polyline points="20 6 9 17 4 12"></polyline>
                             </svg>
                         )}
                         {t.type === 'error' && (
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                 <circle cx="12" cy="12" r="10"></circle>
                                 <line x1="12" y1="16" x2="12" y2="12"></line>
                                 <line x1="12" y1="8" x2="12.01" y2="8"></line>
                             </svg>
                         )}
                         {t.type === 'info' && (
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                 <circle cx="12" cy="12" r="10"></circle>
                                 <line x1="12" y1="8" x2="12" y2="12"></line>
                                 <line x1="12" y1="16" x2="12.01" y2="16"></line>
