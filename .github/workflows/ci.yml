@@ -12,7 +12,8 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [18.x, 20.x, 22.x]
+        # Vite 6/8 requires Node.js >= 20.0.0 (Node 18 is deprecated and reaches EOL)
+        node-version: [20.x, 22.x]
 
     steps:
     - name: Checkout Repository
