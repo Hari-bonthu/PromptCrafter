@@ -358,7 +358,7 @@ export const PromptEvals: React.FC<PromptEvalsProps> = ({
                                         <select
                                             value={editVariables[meta.name] !== undefined ? editVariables[meta.name] : (meta.defaultValue || '')}
                                             onChange={(e) => handleVariableValueChange(meta.name, e.target.value)}
-                                            style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem' }}
+                                            className="select-sm"
                                         >
                                             {meta.choices.map(c => (
                                                 <option key={c} value={c}>{c}</option>

@@ -447,6 +447,7 @@ export const App: React.FC = () => {
                                 history={history}
                                 onRestoreHistory={setOutputText}
                                 onToast={showToast}
+                                onChangeOutputText={setOutputText}
                             />
 
                             {/* Dual Model Playground comparison */}
@@ -492,7 +493,13 @@ export const App: React.FC = () => {
             {/* Floating Toast Notification Containers */}
             <div className="toast-container">
                 {toasts.map(t => (
-                    <div key={t.id} className={`toast ${t.type}`}>
+                    <div 
+                        key={t.id} 
+                        className={`toast ${t.type}`}
+                        onClick={() => setToasts(prev => prev.filter(item => item.id !== t.id))}
+                        style={{ cursor: 'pointer' }}
+                        title="Click to dismiss"
+                    >
                         {t.type === 'success' && (
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                 <polyline points="20 6 9 17 4 12"></polyline>

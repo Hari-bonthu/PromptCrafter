@@ -10,6 +10,7 @@ interface PromptOutputProps {
     history: PromptVersion[];
     onRestoreHistory: (prompt: string) => void;
     onToast: (msg: string, type: 'success' | 'error' | 'info') => void;
+    onChangeOutputText: (val: string) => void;
 }
 
 export const PromptOutput: React.FC<PromptOutputProps> = ({
@@ -19,7 +20,8 @@ export const PromptOutput: React.FC<PromptOutputProps> = ({
     onChangeTab,
     history,
     onRestoreHistory,
-    onToast
+    onToast,
+    onChangeOutputText
 }) => {
     const { tokens, score, tips } = calculatePromptMetrics(outputText, config);
 
@@ -96,7 +98,7 @@ export const PromptOutput: React.FC<PromptOutputProps> = ({
                         <div className="output-wrapper">
                             <textarea
                                 value={outputText}
-                                readOnly
+                                onChange={(e) => onChangeOutputText(e.target.value)}
                                 placeholder="Your enhanced prompt will appear here..."
                             ></textarea>
                         </div>
